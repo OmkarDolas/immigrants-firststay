@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "PowerShell(python -c \"from docx import Document; d=Document\\(r'E:\\\\Resume 2026\\\\Omkar_Dolas_ATS_Optimized.docx'\\); [print\\(p.text\\) for p in d.paragraphs]\")",
+      "PowerShell(python \"E:\\\\Resume 2026\\\\build_infrasai_resume.py\")",
+      "PowerShell(Get-ChildItem \"E:\\\\Immigrants FirstStay\" -Recurse -Depth 3 | Where-Object { $_.FullName -notmatch 'node_modules|\\\\.next|\\\\.git' } | Select-Object FullName | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem \"E:\\\\Immigrants FirstStay\" | Where-Object { $_.Name -eq 'node_modules' } | Select-Object Name, LastWriteTime)"
+    ]
+  }
+}

@@ -12,29 +12,48 @@ interface SearchProps {
   }
 }
 
+// Strip HTML/script tags so search param values are never echoed as markup
+function sanitize(s: string | undefined): string {
+  return (s ?? '').replace(/<[^>]*>/g, '').trim()
+}
+
 export default async function SearchPage({ searchParams }: SearchProps) {
   const supabase = await createClient()
 
-  let query = supabase
-    .from('host_listings')
-    .select('*, profiles(id, full_name, avatar_url, bio, languages)')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+  const city    = sanitize(searchParams.city)
+  const state   = sanitize(searchParams.state)
+  const support = sanitize(searchParams.support)
+  const free    = searchParams.free === '1'
 
-  if (searchParams.city?.trim()) {
-    query = query.ilike('city', `%${searchParams.city.trim()}%`)
-  }
-  if (searchParams.state?.trim()) {
-    query = query.eq('state', searchParams.state.trim().toUpperCase())
-  }
-  if (searchParams.free === '1') {
-    query = query.eq('is_free', true)
-  }
-  if (searchParams.support?.trim()) {
-    query = query.contains('support_offered', [searchParams.support])
-  }
+  // Only query Supabase when the user has actually submitted the form
+  const hasSearched = !!(city || state || support || free)
 
-  const { data: listings } = await query.limit(50)
+  let listings: HostListing[] = []
+
+  if (hasSearched) {
+    let query = supabase
+      .from('host_listings')
+      .select('*, profiles(id, full_name, avatar_url, bio, languages)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+
+    if (city)    query = query.ilike('city', `%${city}%`)
+    if (state)   query = query.eq('state', state.toUpperCase())
+    if (free)    query = query.eq('is_free', true)
+    if (support) query = query.contains('support_offered', [support])
+
+    const { data } = await query.limit(50)
+    listings = (data as HostListing[]) ?? []
+  } else {
+    // Show all active listings by default (browse mode)
+    const { data } = await supabase
+      .from('host_listings')
+      .select('*, profiles(id, full_name, avatar_url, bio, languages)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    listings = (data as HostListing[]) ?? []
+  }
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -48,7 +67,7 @@ export default async function SearchPage({ searchParams }: SearchProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               name="city"
-              defaultValue={searchParams.city}
+              defaultValue={city}
               placeholder="City (e.g. Chicago, New York)"
               className="w-full pl-9 h-10 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
@@ -56,7 +75,7 @@ export default async function SearchPage({ searchParams }: SearchProps) {
 
           <select
             name="state"
-            defaultValue={searchParams.state ?? ''}
+            defaultValue={state}
             className="h-10 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">All states</option>
@@ -67,7 +86,7 @@ export default async function SearchPage({ searchParams }: SearchProps) {
 
           <select
             name="support"
-            defaultValue={searchParams.support ?? ''}
+            defaultValue={support}
             className="h-10 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">All support types</option>
@@ -82,7 +101,7 @@ export default async function SearchPage({ searchParams }: SearchProps) {
               type="checkbox"
               name="free"
               value="1"
-              defaultChecked={searchParams.free === '1'}
+              defaultChecked={free}
               className="rounded"
             />
             Free stays only
@@ -98,25 +117,36 @@ export default async function SearchPage({ searchParams }: SearchProps) {
       </div>
 
       {/* Results */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-muted-foreground text-sm">
-          {(listings?.length ?? 0)} host{(listings?.length ?? 0) !== 1 ? 's' : ''} found
-          {searchParams.city ? ` in ${searchParams.city}` : ''}
-        </p>
-      </div>
+      {hasSearched && (
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-muted-foreground text-sm">
+            {listings.length} host{listings.length !== 1 ? 's' : ''} found
+            {city ? ` in ${city}` : ''}
+            {state ? ` · ${state}` : ''}
+          </p>
+        </div>
+      )}
 
-      {!listings?.length ? (
+      {hasSearched && listings.length === 0 ? (
         <div className="text-center py-24">
           <div className="text-5xl mb-4">🔍</div>
           <h3 className="text-lg font-semibold mb-2">No hosts found</h3>
-          <p className="text-muted-foreground">Try broadening your search or check back soon.</p>
+          <p className="text-muted-foreground mb-4">Try broadening your search — remove a filter or search a nearby city.</p>
+          <a href="/search" className="text-sm text-primary hover:underline">Clear all filters</a>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing as HostListing} />
-          ))}
-        </div>
+        <>
+          {!hasSearched && (
+            <p className="text-muted-foreground text-sm mb-5">
+              Showing all {listings.length} available host{listings.length !== 1 ? 's' : ''} — use the filters above to narrow your search.
+            </p>
+          )}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {listings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing as HostListing} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

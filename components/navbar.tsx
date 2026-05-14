@@ -12,12 +12,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getInitials } from '@/lib/utils'
 import { type Profile } from '@/types'
-import { Home, Search, Menu, X, LayoutDashboard, ListPlus, CalendarCheck, User, LogOut, Shield, Briefcase } from 'lucide-react'
+import {
+  Home, Search, Menu, X, LayoutDashboard, ListPlus,
+  CalendarCheck, User, LogOut, Shield, Briefcase, Clock, Upload,
+} from 'lucide-react'
 
 export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const router = useRouter()
+  const router   = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
 
@@ -41,6 +44,9 @@ export default function Navbar() {
     router.refresh()
   }
 
+  const isApproved = profile?.role === 'admin' || profile?.verification_status === 'approved'
+  const isPending  = !!profile && !isApproved
+
   return (
     <nav className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -55,7 +61,8 @@ export default function Navbar() {
           <Link href="/search" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <Search className="h-4 w-4" /> Find a Host
           </Link>
-          {profile && (
+
+          {isApproved && (
             <>
               <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <LayoutDashboard className="h-4 w-4" /> Dashboard
@@ -66,12 +73,18 @@ export default function Navbar() {
               <Link href="/services" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <Briefcase className="h-4 w-4" /> Services
               </Link>
-              {(profile.role === 'host' || profile.role === 'both') && (
+              {(profile?.role === 'host' || profile?.role === 'both') && (
                 <Link href="/listings" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                   <ListPlus className="h-4 w-4" /> My Listings
                 </Link>
               )}
             </>
+          )}
+
+          {isPending && (
+            <Link href="/pending-approval" className="flex items-center gap-1.5 text-sm text-amber-600 hover:text-amber-700 transition-colors">
+              <Clock className="h-4 w-4" /> Pending Approval
+            </Link>
           )}
         </div>
 
@@ -94,20 +107,39 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile"><User className="h-4 w-4 mr-2" />Profile</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" />Dashboard</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/bookings"><CalendarCheck className="h-4 w-4 mr-2" />Bookings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/services"><Briefcase className="h-4 w-4 mr-2" />Services</Link>
-                </DropdownMenuItem>
-                {(profile.role === 'host' || profile.role === 'both') && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/listings"><ListPlus className="h-4 w-4 mr-2" />My Listings</Link>
-                  </DropdownMenuItem>
+
+                {isApproved && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" />Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookings"><CalendarCheck className="h-4 w-4 mr-2" />Bookings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/services"><Briefcase className="h-4 w-4 mr-2" />Services</Link>
+                    </DropdownMenuItem>
+                    {(profile.role === 'host' || profile.role === 'both') && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/listings"><ListPlus className="h-4 w-4 mr-2" />My Listings</Link>
+                      </DropdownMenuItem>
+                    )}
+                  </>
                 )}
+
+                {isPending && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/pending-approval"><Clock className="h-4 w-4 mr-2" />Pending Approval</Link>
+                    </DropdownMenuItem>
+                    {!profile.gov_id_path && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/upload-id"><Upload className="h-4 w-4 mr-2" />Upload ID</Link>
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+
                 {profile.role === 'admin' && (
                   <>
                     <DropdownMenuSeparator />
@@ -119,6 +151,7 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   </>
                 )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />Sign out
@@ -152,25 +185,51 @@ export default function Navbar() {
           <Link href="/search" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
             <Search className="h-4 w-4" /> Find a Host
           </Link>
+
           {profile ? (
             <>
-              <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
-                <LayoutDashboard className="h-4 w-4" /> Dashboard
-              </Link>
-              <Link href="/bookings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
-                <CalendarCheck className="h-4 w-4" /> Bookings
-              </Link>
-              <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
-                <Briefcase className="h-4 w-4" /> Services
-              </Link>
-              {(profile.role === 'host' || profile.role === 'both') && (
-                <Link href="/listings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
-                  <ListPlus className="h-4 w-4" /> My Listings
-                </Link>
+              {isApproved && (
+                <>
+                  <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                    <LayoutDashboard className="h-4 w-4" /> Dashboard
+                  </Link>
+                  <Link href="/bookings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                    <CalendarCheck className="h-4 w-4" /> Bookings
+                  </Link>
+                  <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                    <Briefcase className="h-4 w-4" /> Services
+                  </Link>
+                  {(profile.role === 'host' || profile.role === 'both') && (
+                    <Link href="/listings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                      <ListPlus className="h-4 w-4" /> My Listings
+                    </Link>
+                  )}
+                </>
               )}
+
+              {isPending && (
+                <>
+                  <Link href="/pending-approval" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-amber-600 hover:bg-secondary">
+                    <Clock className="h-4 w-4" /> Pending Approval
+                  </Link>
+                  {!profile.gov_id_path && (
+                    <Link href="/upload-id" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                      <Upload className="h-4 w-4" /> Upload ID
+                    </Link>
+                  )}
+                </>
+              )}
+
               <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
                 <User className="h-4 w-4" /> Profile
               </Link>
+
+              {profile.role === 'admin' && (
+                <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                  <Shield className="h-4 w-4" /> Admin
+                </Link>
+              )}
+
               <button onClick={handleLogout} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-secondary">
                 <LogOut className="h-4 w-4" /> Sign out
               </button>

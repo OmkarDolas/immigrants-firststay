@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -6,7 +7,30 @@ import {
   Heart, Shield, CheckCircle, ArrowRight,
 } from 'lucide-react'
 
-export default function LandingPage() {
+async function getBecomeHostHref(): Promise<string> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return '/signup'
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, verification_status')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) return '/upload-id'
+    if (profile.role === 'admin' || profile.verification_status === 'approved') return '/listings/new'
+    if (!profile.verification_status || profile.verification_status === 'pending') return '/pending-approval'
+    return '/pending-approval'
+  } catch {
+    return '/signup'
+  }
+}
+
+export default async function LandingPage() {
+  const becomeHostHref = await getBecomeHostHref()
+
   return (
     <div>
       {/* ── Hero ── */}
@@ -31,7 +55,7 @@ export default function LandingPage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="text-base px-8">
-                <Link href="/signup">
+                <Link href={becomeHostHref}>
                   Become a Host <ArrowRight className="h-5 w-5 ml-2" />
                 </Link>
               </Button>
@@ -152,7 +176,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90 border-0 text-base px-8" asChild>
-              <Link href="/signup">Create your host profile</Link>
+              <Link href={becomeHostHref}>Create your host profile</Link>
             </Button>
             <Button size="lg" className="bg-white/20 hover:bg-white/30 border border-white/30 text-base px-8" asChild>
               <Link href="/search">Browse hosts first</Link>

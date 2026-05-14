@@ -9,16 +9,22 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, verification_status')
+    .select('role, verification_status, gov_id_path')
     .eq('id', user.id)
     .single()
 
+  // No profile row yet (new user or RLS gap) — send to upload-id
+  if (!profile) redirect('/upload-id')
+
   // Admins bypass the approval gate
-  if (profile?.role === 'admin') return <>{children}</>
+  if (profile.role === 'admin') return <>{children}</>
 
   // Approved users proceed normally
-  if (profile?.verification_status === 'approved') return <>{children}</>
+  if (profile.verification_status === 'approved') return <>{children}</>
 
-  // Everyone else (pending / rejected / no profile yet) waits
+  // Has profile but no ID uploaded yet — skip pending-approval, go upload first
+  if (!profile.gov_id_path) redirect('/upload-id')
+
+  // Pending / rejected — wait for approval
   redirect('/pending-approval')
 }

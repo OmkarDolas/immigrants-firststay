@@ -41,30 +41,24 @@ function LoginForm() {
         return
       }
 
-      // Read profile to redirect to the right page immediately — avoids
-      // the double redirect (dashboard → pending-approval) that causes the
-      // spinner to hang while the server layout does a second redirect.
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setError('Sign-in failed. Please try again.')
-        return
-      }
+      if (!user) { setError('Sign-in failed. Please try again.'); return }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('verification_status, role')
+        .select('role, verification_status, gov_id_path')
         .eq('id', user.id)
         .single()
 
-      if (profileError) {
-        console.error('Profile fetch error:', profileError)
-      }
-
-      // Invalidate server component cache BEFORE navigating
       router.refresh()
 
-      if (profile?.role === 'admin' || profile?.verification_status === 'approved') {
+      // Redirect based on role + status — avoids double server-redirect loop
+      if (profile?.role === 'admin') {
+        router.push('/admin')
+      } else if (profile?.verification_status === 'approved') {
         router.push(redirectTo)
+      } else if (!profile?.gov_id_path) {
+        router.push('/upload-id')
       } else {
         router.push('/pending-approval')
       }
@@ -97,11 +91,16 @@ function LoginForm() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

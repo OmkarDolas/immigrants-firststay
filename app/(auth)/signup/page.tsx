@@ -21,41 +21,46 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+    setLoading(true)
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
-      setLoading(false)
-      return
-    }
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-
-    if (error) {
-      const msg = error.message.toLowerCase()
-      if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('email already in use') || msg.includes('user already exists')) {
-        setError('An account with this email already exists. Please sign in instead.')
-      } else if (msg.includes('invalid email')) {
-        setError('Please enter a valid email address.')
-      } else if (msg.includes('password')) {
+    try {
+      if (password.length < 6) {
         setError('Password must be at least 6 characters.')
-      } else {
-        setError('Something went wrong. Please try again.')
+        return
       }
-      setLoading(false)
-      return
-    }
 
-    router.push('/upload-id')
-    router.refresh()
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        const msg = error.message.toLowerCase()
+        if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('email already in use') || msg.includes('user already exists')) {
+          setError('An account with this email already exists. Please sign in instead.')
+        } else if (msg.includes('invalid email')) {
+          setError('Please enter a valid email address.')
+        } else if (msg.includes('password')) {
+          setError('Password must be at least 6 characters.')
+        } else {
+          setError('Something went wrong. Please try again.')
+        }
+        return
+      }
+
+      router.push('/upload-id')
+      router.refresh()
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -110,7 +115,7 @@ export default function SignupPage() {
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create account
+            {loading ? 'Creating account…' : 'Create account'}
           </Button>
         </form>
 
@@ -123,8 +128,9 @@ export default function SignupPage() {
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
           By signing up you agree to our{' '}
-          <span className="underline cursor-pointer">Terms of Service</span> and{' '}
-          <span className="underline cursor-pointer">Privacy Policy</span>.
+          <Link href="/terms" className="underline hover:text-foreground">Terms of Service</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
         </p>
       </CardContent>
     </Card>

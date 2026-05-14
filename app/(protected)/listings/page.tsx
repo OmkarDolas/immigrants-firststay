@@ -85,7 +85,7 @@ export default function MyListingsPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate">{listing.title}</h3>
                       {listing.is_verified && (
-                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" title="Verified" />
+                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" aria-label="Verified" />
                       )}
                       <Badge variant={listing.is_active ? 'success' : 'secondary'}>
                         {listing.is_active ? 'Active' : 'Hidden'}

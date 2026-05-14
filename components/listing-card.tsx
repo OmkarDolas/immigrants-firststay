@@ -15,7 +15,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
   const host = listing.profiles
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow group">
+    <Card className={`overflow-hidden hover:shadow-md transition-shadow group ${listing.is_booked ? 'opacity-75' : ''}`}>
       {/* Color header */}
       <div className="h-3 bg-gradient-to-r from-primary to-blue-400" />
 
@@ -38,7 +38,11 @@ export default function ListingCard({ listing }: ListingCardProps) {
           </div>
 
           <div className="text-right shrink-0">
-            {listing.is_free ? (
+            {listing.is_booked ? (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                Booked
+              </Badge>
+            ) : listing.is_free ? (
               <span className="text-green-600 font-bold text-lg">Free</span>
             ) : (
               <div>
@@ -79,8 +83,10 @@ export default function ListingCard({ listing }: ListingCardProps) {
           </p>
         )}
 
-        <Button asChild className="w-full" size="sm">
-          <Link href={`/hosts/${listing.id}`}>View &amp; Book</Link>
+        <Button asChild className="w-full" size="sm" variant={listing.is_booked ? 'outline' : 'default'}>
+          <Link href={`/hosts/${listing.id}`}>
+            {listing.is_booked ? 'View listing' : 'View & Book'}
+          </Link>
         </Button>
       </CardContent>
     </Card>

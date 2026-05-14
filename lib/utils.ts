@@ -58,6 +58,15 @@ export const US_STATES = [
   'WI','WY','DC',
 ]
 
+export const PAYMENT_METHODS = [
+  { value: 'cash',          label: 'Cash',          icon: '💵' },
+  { value: 'paypal',        label: 'PayPal',         icon: '🅿️' },
+  { value: 'venmo',         label: 'Venmo',          icon: '💸' },
+  { value: 'zelle',         label: 'Zelle',          icon: '⚡' },
+  { value: 'bank_transfer', label: 'Bank Transfer',  icon: '🏦' },
+  { value: 'crypto',        label: 'Crypto',         icon: '₿'  },
+] as const
+
 export const BOOKING_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:   { label: 'Pending',   color: 'bg-yellow-100 text-yellow-800' },
   accepted:  { label: 'Accepted',  color: 'bg-green-100 text-green-800'  },

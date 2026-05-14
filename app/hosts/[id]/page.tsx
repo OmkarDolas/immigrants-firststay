@@ -235,6 +235,8 @@ export default async function HostProfilePage({ params }: Props) {
               availableFrom={l.available_from}
               availableTo={l.available_to}
               isLoggedIn={!!user}
+              isBooked={l.is_booked}
+              paymentMethodsAccepted={l.payment_methods_accepted ?? []}
             />
           </div>
         </div>

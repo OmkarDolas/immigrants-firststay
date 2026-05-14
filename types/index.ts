@@ -35,14 +35,18 @@ export interface HostListing {
   house_rules: string | null
   languages_spoken: string[]
   support_offered: SupportType[]
+  payment_methods_accepted: string[]
   is_verified: boolean
   is_active: boolean
+  is_booked: boolean
   available_from: string | null
   available_to: string | null
   created_at: string
   updated_at: string
   profiles?: Profile
 }
+
+export type PaymentStatus = 'pending' | 'paid' | 'refunded'
 
 export interface Booking {
   id: string
@@ -55,6 +59,8 @@ export interface Booking {
   message: string | null
   status: BookingStatus
   total_price: number | null
+  payment_method: string | null
+  payment_status: PaymentStatus
   created_at: string
   updated_at: string
   host_listings?: HostListing & { profiles?: Profile }

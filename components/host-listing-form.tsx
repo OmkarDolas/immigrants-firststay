@@ -12,9 +12,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, CheckCircle } from 'lucide-react'
-import { SUPPORT_OPTIONS, LANGUAGE_OPTIONS, US_STATES } from '@/lib/utils'
+import { SUPPORT_OPTIONS, LANGUAGE_OPTIONS, US_STATES, PAYMENT_METHODS } from '@/lib/utils'
 
-type FormData = Partial<Omit<HostListing, 'id' | 'host_id' | 'created_at' | 'updated_at' | 'is_verified' | 'profiles'>>
+type FormData = Partial<Omit<HostListing, 'id' | 'host_id' | 'created_at' | 'updated_at' | 'is_verified' | 'is_booked' | 'profiles'>>
 
 interface Props {
   initialData?: Partial<HostListing>
@@ -38,11 +38,12 @@ export default function HostListingForm({ initialData, listingId }: Props) {
     is_free:          initialData?.is_free          ?? true,
     price_per_night:  initialData?.price_per_night  ?? null,
     house_rules:      initialData?.house_rules      ?? '',
-    languages_spoken: initialData?.languages_spoken ?? [],
-    support_offered:  initialData?.support_offered  ?? [],
-    available_from:   initialData?.available_from   ?? '',
-    available_to:     initialData?.available_to     ?? '',
-    is_active:        initialData?.is_active        ?? true,
+    languages_spoken:         initialData?.languages_spoken         ?? [],
+    support_offered:          initialData?.support_offered          ?? [],
+    payment_methods_accepted: initialData?.payment_methods_accepted ?? [],
+    available_from:           initialData?.available_from           ?? '',
+    available_to:             initialData?.available_to             ?? '',
+    is_active:                initialData?.is_active                ?? true,
   })
 
   const [saving, setSaving] = useState(false)
@@ -52,7 +53,7 @@ export default function HostListingForm({ initialData, listingId }: Props) {
   const set = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
-  const toggleArray = (key: 'languages_spoken' | 'support_offered', val: string) => {
+  const toggleArray = (key: 'languages_spoken' | 'support_offered' | 'payment_methods_accepted', val: string) => {
     const arr = (form[key] as string[]) ?? []
     set(key, (arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]) as FormData[typeof key])
   }
@@ -199,6 +200,28 @@ export default function HostListingForm({ initialData, listingId }: Props) {
           )}
         </CardContent>
       </Card>
+
+      {/* Payment methods */}
+      {!form.is_free && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Accepted Payment Methods</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {PAYMENT_METHODS.map(({ value, label, icon }) => (
+                <label key={value} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border hover:bg-secondary transition-colors">
+                  <Checkbox
+                    checked={(form.payment_methods_accepted as string[] ?? []).includes(value)}
+                    onCheckedChange={() => toggleArray('payment_methods_accepted', value)}
+                  />
+                  <span className="text-sm">{icon} {label}</span>
+                </label>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Support offered */}
       <Card>

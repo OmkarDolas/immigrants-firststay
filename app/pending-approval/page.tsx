@@ -53,21 +53,11 @@ export default async function PendingApprovalPage() {
                 <Button asChild variant="outline" className="w-full">
                   <Link href="/upload-id">Re-upload ID</Link>
                 </Button>
-                <form action="/auth/signout" method="post">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full text-muted-foreground"
-                    onClick={async () => {
-                      'use client'
-                    }}
-                    asChild
-                  >
-                    <Link href="/login">
-                      <LogOut className="h-4 w-4 mr-2" /> Sign out
-                    </Link>
-                  </Button>
-                </form>
+                <Button asChild variant="ghost" className="w-full text-muted-foreground">
+                  <Link href="/login">
+                    <LogOut className="h-4 w-4 mr-2" /> Sign out
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>

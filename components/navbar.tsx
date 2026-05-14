@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getInitials } from '@/lib/utils'
 import { type Profile } from '@/types'
-import { Home, Search, Menu, X, LayoutDashboard, ListPlus, CalendarCheck, User, LogOut, Shield } from 'lucide-react'
+import { Home, Search, Menu, X, LayoutDashboard, ListPlus, CalendarCheck, User, LogOut, Shield, Briefcase } from 'lucide-react'
 
 export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -63,6 +63,9 @@ export default function Navbar() {
               <Link href="/bookings" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <CalendarCheck className="h-4 w-4" /> Bookings
               </Link>
+              <Link href="/services" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Briefcase className="h-4 w-4" /> Services
+              </Link>
               {(profile.role === 'host' || profile.role === 'both') && (
                 <Link href="/listings" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                   <ListPlus className="h-4 w-4" /> My Listings
@@ -97,6 +100,9 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/bookings"><CalendarCheck className="h-4 w-4 mr-2" />Bookings</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/services"><Briefcase className="h-4 w-4 mr-2" />Services</Link>
+                </DropdownMenuItem>
                 {(profile.role === 'host' || profile.role === 'both') && (
                   <DropdownMenuItem asChild>
                     <Link href="/listings"><ListPlus className="h-4 w-4 mr-2" />My Listings</Link>
@@ -107,6 +113,9 @@ export default function Navbar() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/admin"><Shield className="h-4 w-4 mr-2" />Admin</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/services"><Briefcase className="h-4 w-4 mr-2" />Service Requests</Link>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -150,6 +159,9 @@ export default function Navbar() {
               </Link>
               <Link href="/bookings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
                 <CalendarCheck className="h-4 w-4" /> Bookings
+              </Link>
+              <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+                <Briefcase className="h-4 w-4" /> Services
               </Link>
               {(profile.role === 'host' || profile.role === 'both') && (
                 <Link href="/listings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">

@@ -3,19 +3,19 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { type Booking, type Profile } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Loader2, CalendarRange, Users, MessageSquare, MapPin } from 'lucide-react'
-import { formatDate, getInitials, BOOKING_STATUS_CONFIG, calculateNights, formatCurrency } from '@/lib/utils'
+import { Loader2, CalendarRange, Users, MessageSquare, MapPin, CreditCard, CheckCircle2 } from 'lucide-react'
+import { formatDate, getInitials, BOOKING_STATUS_CONFIG, PAYMENT_METHODS, calculateNights, formatCurrency } from '@/lib/utils'
 
 export default function BookingsPage() {
-  const [profile, setProfile]   = useState<Profile | null>(null)
-  const [asGuest, setAsGuest]   = useState<Booking[]>([])
-  const [asHost,  setAsHost]    = useState<Booking[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [asGuest, setAsGuest] = useState<Booking[]>([])
+  const [asHost,  setAsHost]  = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   const load = async () => {
@@ -31,7 +31,7 @@ export default function BookingsPage() {
         .order('created_at', { ascending: false }),
       supabase
         .from('bookings')
-        .select('*, host_listings(title, city, state), guest:profiles!bookings_guest_id_fkey(full_name, email, avatar_url, languages, country_of_origin)')
+        .select('*, host_listings(id, title, city, state), guest:profiles!bookings_guest_id_fkey(full_name, email, avatar_url, languages, country_of_origin)')
         .eq('host_id', user.id)
         .order('created_at', { ascending: false }),
     ])
@@ -44,8 +44,32 @@ export default function BookingsPage() {
 
   useEffect(() => { load() }, [])
 
-  const updateStatus = async (id: string, status: string) => {
-    await supabase.from('bookings').update({ status }).eq('id', id)
+  const updateStatus = async (booking: Booking, status: string) => {
+    await supabase.from('bookings').update({ status }).eq('id', booking.id)
+
+    const listingId = (booking as any).host_listings?.id ?? booking.listing_id
+
+    if (status === 'accepted') {
+      await supabase.from('host_listings').update({ is_booked: true }).eq('id', listingId)
+    } else if (status === 'completed' || status === 'cancelled' || status === 'declined') {
+      // Only clear is_booked if no other accepted booking exists for this listing
+      const { data: others } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('listing_id', listingId)
+        .eq('status', 'accepted')
+        .neq('id', booking.id)
+
+      if (!others || others.length === 0) {
+        await supabase.from('host_listings').update({ is_booked: false }).eq('id', listingId)
+      }
+    }
+
+    load()
+  }
+
+  const markPaid = async (bookingId: string) => {
+    await supabase.from('bookings').update({ payment_status: 'paid' }).eq('id', bookingId)
     load()
   }
 
@@ -57,21 +81,32 @@ export default function BookingsPage() {
     )
   }
 
+  const PAYMENT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    pending:  { label: 'Payment pending', color: 'bg-yellow-100 text-yellow-800' },
+    paid:     { label: 'Paid',            color: 'bg-green-100 text-green-800'   },
+    refunded: { label: 'Refunded',        color: 'bg-gray-100 text-gray-800'     },
+  }
+
   const BookingCard = ({ booking, viewAs }: { booking: Booking; viewAs: 'guest' | 'host' }) => {
     const cfg     = BOOKING_STATUS_CONFIG[booking.status]
     const listing = (booking as any).host_listings
     const guest   = (booking as any).guest as Profile | undefined
     const nights  = calculateNights(booking.check_in, booking.check_out)
     const price   = booking.total_price ?? (listing?.is_free ? 0 : (listing?.price_per_night ?? 0) * nights)
+    const paymentLabel = PAYMENT_METHODS.find((m) => m.value === booking.payment_method)
+    const payStatusCfg = booking.payment_status ? PAYMENT_STATUS_CONFIG[booking.payment_status] : null
 
     return (
       <Card>
         <CardContent className="p-5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <h3 className="font-semibold truncate">{listing?.title ?? 'Listing'}</h3>
                 <Badge className={`${cfg.color} shrink-0`}>{cfg.label}</Badge>
+                {booking.status === 'accepted' && payStatusCfg && (
+                  <Badge className={`${payStatusCfg.color} shrink-0`}>{payStatusCfg.label}</Badge>
+                )}
               </div>
 
               <div className="space-y-1.5 text-sm text-muted-foreground">
@@ -90,9 +125,15 @@ export default function BookingsPage() {
                   {price > 0 && <span>· {formatCurrency(price)} total</span>}
                   {price === 0 && <span>· Free stay</span>}
                 </div>
+                {paymentLabel && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Payment via {paymentLabel.icon} {paymentLabel.label}
+                  </div>
+                )}
               </div>
 
-              {/* Show other party info */}
+              {/* Other party */}
               {viewAs === 'guest' && listing?.profiles && (
                 <div className="mt-3 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
@@ -129,29 +170,48 @@ export default function BookingsPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col gap-2 shrink-0 min-w-[120px]">
+            <div className="flex flex-col gap-2 shrink-0 min-w-[130px]">
               {viewAs === 'host' && booking.status === 'pending' && (
                 <>
-                  <Button size="sm" onClick={() => updateStatus(booking.id, 'accepted')}>
+                  <Button size="sm" onClick={() => updateStatus(booking, 'accepted')}>
                     Accept
                   </Button>
-                  <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                    onClick={() => updateStatus(booking.id, 'declined')}>
+                  <Button size="sm" variant="outline"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/5"
+                    onClick={() => updateStatus(booking, 'declined')}>
                     Decline
                   </Button>
                 </>
               )}
               {viewAs === 'guest' && booking.status === 'pending' && (
-                <Button size="sm" variant="outline" className="text-destructive border-destructive/30"
-                  onClick={() => updateStatus(booking.id, 'cancelled')}>
+                <Button size="sm" variant="outline"
+                  className="text-destructive border-destructive/30"
+                  onClick={() => updateStatus(booking, 'cancelled')}>
                   Cancel
                 </Button>
               )}
               {booking.status === 'accepted' && (
-                <Button size="sm" variant="outline"
-                  onClick={() => updateStatus(booking.id, 'completed')}>
-                  Mark complete
-                </Button>
+                <>
+                  {/* Host can mark paid */}
+                  {viewAs === 'host' && booking.payment_method && booking.payment_status === 'pending' && (
+                    <Button size="sm" variant="outline"
+                      className="text-green-700 border-green-300 hover:bg-green-50"
+                      onClick={() => markPaid(booking.id)}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark paid
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline"
+                    onClick={() => updateStatus(booking, 'completed')}>
+                    Mark complete
+                  </Button>
+                  {viewAs === 'guest' && (
+                    <Button size="sm" variant="outline"
+                      className="text-destructive border-destructive/30"
+                      onClick={() => updateStatus(booking, 'cancelled')}>
+                      Cancel
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -3,6 +3,58 @@ export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type BookingStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'
 export type SupportType = 'temporary_stay' | 'airport_pickup' | 'apartment_search' | 'local_guidance'
 
+export type ServiceType = 'airport_pickup' | 'apartment_search' | 'local_guidance'
+export type ServiceRequestStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface AirportPickupRequestData {
+  airport_name: string
+  arrival_date: string
+  arrival_time: string
+  flight_number: string
+  num_passengers: number
+  num_bags: number
+  destination_address: string
+  preferred_language: string
+  special_instructions: string
+}
+
+export interface ApartmentSearchRequestData {
+  target_city: string
+  target_state: string
+  move_in_date: string
+  budget_min: number
+  budget_max: number
+  num_bedrooms: number
+  lease_duration: string
+  has_pets: boolean
+  needs_furnished: boolean
+  preferred_neighborhoods: string
+  additional_requirements: string
+}
+
+export interface LocalGuidanceRequestData {
+  city: string
+  state: string
+  guidance_category: string
+  preferred_language: string
+  urgency_level: 'low' | 'medium' | 'high'
+  question: string
+}
+
+export interface ServiceRequest {
+  id: string
+  user_id: string
+  service_type: ServiceType
+  status: ServiceRequestStatus
+  request_data: AirportPickupRequestData | ApartmentSearchRequestData | LocalGuidanceRequestData
+  assigned_host_id: string | null
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
+  profiles?: Pick<Profile, 'id' | 'full_name' | 'email'>
+  assigned_host?: Pick<Profile, 'id' | 'full_name' | 'email'>
+}
+
 export interface Profile {
   id: string
   email: string

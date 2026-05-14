@@ -40,7 +40,16 @@ export default function SignupPage() {
     })
 
     if (error) {
-      setError(error.message)
+      const msg = error.message.toLowerCase()
+      if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('email already in use') || msg.includes('user already exists')) {
+        setError('An account with this email already exists. Please sign in instead.')
+      } else if (msg.includes('invalid email')) {
+        setError('Please enter a valid email address.')
+      } else if (msg.includes('password')) {
+        setError('Password must be at least 6 characters.')
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
       setLoading(false)
       return
     }

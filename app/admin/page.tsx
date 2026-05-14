@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AdminActions from './admin-actions'
-import { Users, Home, CalendarCheck, CheckCircle, Shield, Clock, ExternalLink } from 'lucide-react'
+import { Users, Home, CalendarCheck, CheckCircle, Shield, Clock, ExternalLink, Briefcase } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 const VERIFY_COLORS: Record<string, string> = {
@@ -81,12 +81,20 @@ export default async function AdminPage() {
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-7xl">
-      <div className="flex items-center gap-3 mb-8">
-        <Shield className="h-7 w-7 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Manage users, approvals, hosts, and bookings</p>
+      <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Shield className="h-7 w-7 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            <p className="text-muted-foreground text-sm">Manage users, approvals, hosts, and bookings</p>
+          </div>
         </div>
+        <Link
+          href="/admin/services"
+          className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
+        >
+          <Briefcase className="h-4 w-4" /> Service Requests
+        </Link>
       </div>
 
       {/* Stats */}

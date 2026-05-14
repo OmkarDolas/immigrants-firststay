@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CheckCircle, EyeOff, Loader2, UserCheck, UserX } from 'lucide-react'
+import { CheckCircle, EyeOff, Loader2, Trash2, UserCheck, UserX } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 type ListingProps = {
@@ -25,6 +25,7 @@ type Props = ListingProps | UserProps
 export default function AdminActions(props: Props) {
   const [loading,        setLoading]        = useState(false)
   const [showRejectForm, setShowRejectForm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [reason,         setReason]         = useState('')
   const router   = useRouter()
   const supabase = createClient()
@@ -75,6 +76,18 @@ export default function AdminActions(props: Props) {
   // User verification actions
   const { userId, verificationStatus } = props
 
+  const deleteUser = async () => {
+    setLoading(true)
+    await fetch('/api/admin/delete-user', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    router.refresh()
+    setLoading(false)
+    setShowDeleteConfirm(false)
+  }
+
   const approveUser = async () => {
     setLoading(true)
     await supabase.from('profiles').update({
@@ -96,6 +109,24 @@ export default function AdminActions(props: Props) {
     setLoading(false)
     setShowRejectForm(false)
     setReason('')
+  }
+
+  if (showDeleteConfirm) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-destructive font-medium">Delete user permanently?</span>
+        <Button size="sm" variant="destructive"
+          className="h-7 text-xs shrink-0"
+          onClick={deleteUser} disabled={loading}>
+          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Delete'}
+        </Button>
+        <Button size="sm" variant="ghost"
+          className="h-7 text-xs shrink-0"
+          onClick={() => setShowDeleteConfirm(false)}>
+          Cancel
+        </Button>
+      </div>
+    )
   }
 
   if (showRejectForm) {
@@ -153,6 +184,12 @@ export default function AdminActions(props: Props) {
           <UserX className="h-3 w-3 mr-1" /> Reject
         </Button>
       )}
+
+      <Button size="sm" variant="ghost"
+        className="h-7 text-xs text-destructive/70 hover:text-destructive hover:bg-destructive/5"
+        onClick={() => setShowDeleteConfirm(true)} disabled={loading}>
+        <Trash2 className="h-3 w-3" />
+      </Button>
     </div>
   )
 }

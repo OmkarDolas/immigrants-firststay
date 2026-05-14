@@ -45,8 +45,7 @@ export default function SignupPage() {
       return
     }
 
-    // Redirect to profile setup so users can complete their info
-    router.push('/profile?new=true')
+    router.push('/upload-id')
     router.refresh()
   }
 

@@ -1,4 +1,5 @@
 export type Role = 'guest' | 'host' | 'both' | 'admin'
+export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type BookingStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'
 export type SupportType = 'temporary_stay' | 'airport_pickup' | 'apartment_search' | 'local_guidance'
 
@@ -15,6 +16,10 @@ export interface Profile {
   linkedin_verified: boolean
   linkedin_name: string | null
   instagram_url: string | null
+  verification_status: VerificationStatus
+  gov_id_path: string | null
+  gov_id_type: string | null
+  rejection_reason: string | null
   created_at: string
   updated_at: string
 }

@@ -106,7 +106,7 @@ export default function BookingsPage() {
               {viewAs === 'host' && guest && (
                 <div className="mt-3 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={guest.avatar_url} />
+                    <AvatarImage src={guest.avatar_url ?? undefined} />
                     <AvatarFallback className="text-xs">{getInitials(guest.full_name)}</AvatarFallback>
                   </Avatar>
                   <div>

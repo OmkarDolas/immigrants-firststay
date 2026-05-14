@@ -26,14 +26,14 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
 const STATUS_OPTIONS: ServiceRequestStatus[] = ['pending', 'in_progress', 'completed', 'cancelled']
 
 function requestSummary(req: ServiceRequest): string {
-  const d = req.request_data as Record<string, unknown>
+  const d = req.request_data as unknown as Record<string, unknown>
   if (req.service_type === 'airport_pickup')   return `${d.airport_name ?? ''} · ${d.arrival_date ?? ''} · ${d.num_passengers ?? ''} pax`
   if (req.service_type === 'apartment_search') return `${d.target_city ?? ''}, ${d.target_state ?? ''} · $${d.budget_min}–$${d.budget_max}/mo`
   if (req.service_type === 'local_guidance')   return `${d.city ?? ''}, ${d.state ?? ''} · ${String(d.guidance_category ?? '').replace(/_/g, ' ')}`
   return ''
 }
 
-function RequestDetail({ data, type }: { data: Record<string, unknown>; type: ServiceType }) {
+function RequestDetail({ data }: { data: Record<string, unknown>; type: ServiceType }) {
   const rows: [string, unknown][] = Object.entries(data)
   return (
     <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
@@ -247,7 +247,7 @@ export default function AdminServicesPage() {
                                 <div>
                                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Request details</p>
                                   <RequestDetail
-                                    data={req.request_data as Record<string, unknown>}
+                                    data={req.request_data as unknown as Record<string, unknown>}
                                     type={req.service_type}
                                   />
                                 </div>

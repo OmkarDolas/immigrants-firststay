@@ -17,7 +17,7 @@ const SERVICE_META: Record<ServiceType, { label: string; icon: React.ElementType
 }
 
 function requestSummary(req: ServiceRequest): string {
-  const d = req.request_data as Record<string, unknown>
+  const d = req.request_data as unknown as Record<string, unknown>
   if (req.service_type === 'airport_pickup') {
     return `${d.airport_name ?? ''} · ${formatDate(String(d.arrival_date ?? ''))}`
   }

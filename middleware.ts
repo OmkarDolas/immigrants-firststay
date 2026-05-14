@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import type { CookieMethodsServer } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
 const PROTECTED = ['/dashboard', '/profile', '/listings', '/bookings']
@@ -13,7 +14,7 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll: (toSet) => {
+        setAll: (toSet: Parameters<NonNullable<CookieMethodsServer['setAll']>>[0]) => {
           toSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
           toSet.forEach(({ name, value, options }) =>

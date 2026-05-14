@@ -10,88 +10,117 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Upload, FileCheck, ShieldCheck } from 'lucide-react'
 
 const ID_TYPES = [
-  { value: 'passport',        label: 'Passport' },
-  { value: 'drivers_license', label: "Driver's License" },
-  { value: 'national_id',     label: 'National ID Card' },
-  { value: 'residence_permit',label: 'Residence Permit' },
-  { value: 'other',           label: 'Other Government ID' },
+  { value: 'passport',         label: 'Passport'              },
+  { value: 'drivers_license',  label: "Driver's License"      },
+  { value: 'national_id',      label: 'National ID Card'      },
+  { value: 'residence_permit', label: 'Residence Permit'      },
+  { value: 'other',            label: 'Other Government ID'   },
 ]
 
 export default function UploadIdPage() {
-  const [idType,    setIdType]    = useState('')
-  const [file,      setFile]      = useState<File | null>(null)
-  const [loading,   setLoading]   = useState(false)
-  const [checking,  setChecking]  = useState(true)
-  const [error,     setError]     = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const router  = useRouter()
+  const [idType,   setIdType]   = useState('')
+  const [file,     setFile]     = useState<File | null>(null)
+  const [loading,  setLoading]  = useState(false)
+  const [checking, setChecking] = useState(true)
+  const [error,    setError]    = useState<string | null>(null)
+  const fileRef  = useRef<HTMLInputElement>(null)
+  const router   = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const check = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      try {
+        const { data: { user }, error: userErr } = await supabase.auth.getUser()
+        if (userErr || !user) {
+          router.push('/login')
+          return
+        }
 
-      // Already approved users don't need to re-upload
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('verification_status, role')
-        .eq('id', user.id)
-        .single()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('verification_status, role')
+          .eq('id', user.id)
+          .single()
 
-      if (profile?.role === 'admin' || profile?.verification_status === 'approved') {
-        router.push('/dashboard')
-        return
+        if (profile?.role === 'admin' || profile?.verification_status === 'approved') {
+          router.push('/dashboard')
+        }
+      } catch (err) {
+        console.error('Auth check error:', err)
+      } finally {
+        setChecking(false)
       }
-
-      setChecking(false)
     }
     check()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Client-side validation before hitting Supabase
     if (!file)   { setError('Please select a file.'); return }
     if (!idType) { setError('Please select an ID type.'); return }
-
-    const maxSize = 10 * 1024 * 1024 // 10 MB
-    if (file.size > maxSize) { setError('File must be under 10 MB.'); return }
+    if (file.size > 10 * 1024 * 1024) { setError('File must be under 10 MB.'); return }
 
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-    if (!allowed.includes(file.type)) { setError('Only JPG, PNG, WEBP, or PDF files are allowed.'); return }
+    if (!allowed.includes(file.type)) {
+      setError('Only JPG, PNG, WEBP, or PDF files are allowed.')
+      return
+    }
 
-    setLoading(true)
     setError(null)
+    setLoading(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
+    try {
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !user) {
+        router.push('/login')
+        return
+      }
 
-    const ext  = file.name.split('.').pop() ?? 'jpg'
-    const path = `${user.id}/government_id.${ext}`
+      // Upload to Supabase Storage
+      const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+      const path = `${user.id}/government_id.${ext}`
 
-    const { error: uploadErr } = await supabase.storage
-      .from('government-ids')
-      .upload(path, file, { upsert: true, contentType: file.type })
+      const { error: uploadErr } = await supabase.storage
+        .from('government-ids')
+        .upload(path, file, { upsert: true, contentType: file.type })
 
-    if (uploadErr) {
-      setError(`Upload failed: ${uploadErr.message}`)
+      if (uploadErr) {
+        console.error('Storage upload error:', uploadErr)
+        if (uploadErr.message.includes('security policy') || uploadErr.message.includes('not authorized')) {
+          setError('Upload permission denied. Please contact support if this persists.')
+        } else {
+          setError(`Upload failed: ${uploadErr.message}`)
+        }
+        return
+      }
+
+      // Update profile
+      const { error: updateErr } = await supabase
+        .from('profiles')
+        .update({
+          gov_id_path:         path,
+          gov_id_type:         idType,
+          verification_status: 'pending',
+        })
+        .eq('id', user.id)
+
+      if (updateErr) {
+        console.error('Profile update error:', updateErr)
+        setError(`Failed to save your information: ${updateErr.message}`)
+        return
+      }
+
+      router.push('/pending-approval')
+      router.refresh()
+    } catch (err) {
+      console.error('Upload submission error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { error: updateErr } = await supabase.from('profiles').update({
-      gov_id_path:         path,
-      gov_id_type:         idType,
-      verification_status: 'pending',
-    }).eq('id', user.id)
-
-    if (updateErr) {
-      setError(`Failed to save: ${updateErr.message}`)
-      setLoading(false)
-      return
-    }
-
-    router.push('/pending-approval')
   }
 
   if (checking) {
@@ -112,7 +141,8 @@ export default function UploadIdPage() {
           </div>
           <h1 className="text-2xl font-bold">Verify your identity</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Upload a government-issued ID to complete your account setup. Our admin team will review it within 24 hours.
+            Upload a government-issued ID to complete your account setup.
+            Our admin team will review it within 24 hours.
           </p>
         </div>
 
@@ -128,7 +158,7 @@ export default function UploadIdPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1.5">
                 <Label>ID Type *</Label>
-                <Select value={idType} onValueChange={setIdType} required>
+                <Select value={idType} onValueChange={setIdType}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select ID type" />
                   </SelectTrigger>
@@ -144,11 +174,13 @@ export default function UploadIdPage() {
                 <Label>Upload file *</Label>
                 <div
                   onClick={() => fileRef.current?.click()}
-                  className={`
-                    relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed
-                    cursor-pointer p-8 transition-colors
-                    ${file ? 'border-green-400 bg-green-50' : 'border-border hover:border-primary/50 hover:bg-secondary/50'}
-                  `}
+                  className={[
+                    'relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed',
+                    'cursor-pointer p-8 transition-colors',
+                    file
+                      ? 'border-green-400 bg-green-50'
+                      : 'border-border hover:border-primary/50 hover:bg-secondary/50',
+                  ].join(' ')}
                 >
                   {file ? (
                     <>
@@ -184,7 +216,11 @@ export default function UploadIdPage() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading || !file || !idType}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !file || !idType}
+              >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? 'Uploading…' : 'Submit for review'}
               </Button>

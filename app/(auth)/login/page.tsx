@@ -15,26 +15,65 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError]       = useState<string | null>(null)
   const [loading, setLoading]   = useState(false)
-  const router      = useRouter()
+  const router       = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo  = searchParams.get('redirectTo') ?? '/dashboard'
-  const supabase    = createClient()
+  const redirectTo   = searchParams.get('redirectTo') ?? '/dashboard'
+  const supabase     = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+    setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      setError(error.message)
+      if (signInError) {
+        console.error('Sign-in error:', signInError)
+        const msg = signInError.message.toLowerCase()
+        if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('invalid email or password')) {
+          setError('Incorrect email or password. Please try again.')
+        } else if (msg.includes('email not confirmed')) {
+          setError('Please verify your email address before signing in.')
+        } else {
+          setError(signInError.message)
+        }
+        return
+      }
+
+      // Read profile to redirect to the right page immediately — avoids
+      // the double redirect (dashboard → pending-approval) that causes the
+      // spinner to hang while the server layout does a second redirect.
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Sign-in failed. Please try again.')
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('verification_status, role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError)
+      }
+
+      // Invalidate server component cache BEFORE navigating
+      router.refresh()
+
+      if (profile?.role === 'admin' || profile?.verification_status === 'approved') {
+        router.push(redirectTo)
+      } else {
+        router.push('/pending-approval')
+      }
+    } catch (err) {
+      console.error('Unexpected login error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    router.push(redirectTo)
-    router.refresh()
   }
 
   return (
@@ -78,7 +117,7 @@ function LoginForm() {
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign in
+            {loading ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
 

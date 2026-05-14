@@ -224,6 +224,14 @@ export default function UploadIdPage() {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? 'Uploading…' : 'Submit for review'}
               </Button>
+
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                className="w-full text-sm text-muted-foreground hover:text-foreground text-center py-1 transition-colors"
+              >
+                Skip for now
+              </button>
             </form>
           </CardContent>
         </Card>

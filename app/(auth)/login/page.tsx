@@ -56,9 +56,9 @@ function LoginForm() {
       } else if (profile?.verification_status === 'approved') {
         router.push(redirectTo)
       } else if (!profile?.gov_id_path) {
-        router.push('/upload-id')
+        router.push(redirectTo)   // skipped ID upload — go to dashboard
       } else {
-        router.push('/pending-approval')
+        router.push('/pending-approval')  // uploaded but awaiting approval
       }
     } catch (err) {
       console.error('Unexpected login error:', err)

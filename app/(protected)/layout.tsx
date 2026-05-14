@@ -22,9 +22,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   // Approved users proceed normally
   if (profile.verification_status === 'approved') return <>{children}</>
 
-  // Has profile but no ID uploaded yet — skip pending-approval, go upload first
-  if (!profile.gov_id_path) redirect('/upload-id')
+  // No ID uploaded yet — user skipped verification, allow access
+  if (!profile.gov_id_path) return <>{children}</>
 
-  // Pending / rejected — wait for approval
+  // Uploaded ID but not yet approved — wait for admin review
   redirect('/pending-approval')
 }

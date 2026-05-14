@@ -44,8 +44,9 @@ export default function Navbar() {
     router.refresh()
   }
 
-  const isApproved = profile?.role === 'admin' || profile?.verification_status === 'approved'
-  const isPending  = !!profile && !isApproved
+  const hasUploadedId = !!profile?.gov_id_path
+  const isApproved    = profile?.role === 'admin' || profile?.verification_status === 'approved' || !hasUploadedId
+  const isPending     = !!profile && hasUploadedId && !isApproved
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">

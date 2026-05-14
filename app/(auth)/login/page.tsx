@@ -50,8 +50,6 @@ function LoginForm() {
         .eq('id', user.id)
         .single()
 
-      router.refresh()
-
       // Redirect based on role + status — avoids double server-redirect loop
       if (profile?.role === 'admin') {
         router.push('/admin')

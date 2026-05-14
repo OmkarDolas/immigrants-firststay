@@ -104,6 +104,7 @@ export default function UploadIdPage() {
           gov_id_path:         path,
           gov_id_type:         idType,
           verification_status: 'pending',
+          rejection_reason:    null,
         })
         .eq('id', user.id)
 

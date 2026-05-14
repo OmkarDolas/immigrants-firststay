@@ -12,6 +12,9 @@ export interface Profile {
   languages: string[]
   role: Role
   country_of_origin: string | null
+  linkedin_verified: boolean
+  linkedin_name: string | null
+  instagram_url: string | null
   created_at: string
   updated_at: string
 }

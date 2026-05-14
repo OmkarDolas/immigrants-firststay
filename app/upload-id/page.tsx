@@ -115,7 +115,6 @@ export default function UploadIdPage() {
       }
 
       router.push('/pending-approval')
-      router.refresh()
     } catch (err) {
       console.error('Upload submission error:', err)
       setError('Something went wrong. Please try again.')

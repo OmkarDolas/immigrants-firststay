@@ -30,7 +30,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
               <div className="flex items-center gap-1.5">
                 <h3 className="font-semibold text-base leading-tight">{listing.title}</h3>
                 {listing.is_verified && (
-                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" title="Verified host" />
+                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" aria-label="Verified host" />
                 )}
               </div>
               <p className="text-sm text-muted-foreground">{host?.full_name ?? 'Anonymous Host'}</p>

@@ -81,7 +81,7 @@ export default function AdminServicesPage() {
     const rawRequests = (reqRes.data ?? []) as ServiceRequest[]
 
     // Fetch user profiles for display
-    const userIds = [...new Set(rawRequests.map((r) => r.user_id))]
+    const userIds = Array.from(new Set(rawRequests.map((r) => r.user_id)))
     let userMap: Record<string, { full_name: string | null; email: string }> = {}
     if (userIds.length) {
       const { data: users } = await supabase

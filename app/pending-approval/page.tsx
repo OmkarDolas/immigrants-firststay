@@ -21,8 +21,8 @@ export default async function PendingApprovalPage() {
   if (profile?.role === 'admin') redirect('/admin')
   if (profile?.verification_status === 'approved') redirect('/dashboard')
 
-  // No ID uploaded yet — skip this page entirely
-  if (!profile?.gov_id_path) redirect('/upload-id')
+  // No ID uploaded yet — user skipped verification, send to dashboard
+  if (!profile?.gov_id_path) redirect('/dashboard')
 
   const status = profile.verification_status ?? 'pending'
   const name   = profile.full_name ?? user.email ?? 'there'

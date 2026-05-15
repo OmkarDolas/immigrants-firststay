@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -10,11 +10,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, CheckCircle } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail]       = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState<string | null>(null)
-  const [sent, setSent]         = useState(false)
+  const [email, setEmail]     = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
+  const [sent, setSent]       = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    document.title = 'Forgot Password — ImmigrantsFirstStay'
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

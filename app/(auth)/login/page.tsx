@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -8,17 +8,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 function LoginForm() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw]     = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [loading, setLoading]   = useState(false)
   const router       = useRouter()
   const searchParams = useSearchParams()
   const redirectTo   = searchParams.get('redirectTo') ?? '/dashboard'
   const supabase     = createClient()
+
+  useEffect(() => {
+    document.title = 'Sign In — ImmigrantsFirstStay'
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,11 +35,16 @@ function LoginForm() {
 
       if (signInError) {
         console.error('Sign-in error:', signInError)
-        const msg = signInError.message.toLowerCase()
-        if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('invalid email or password')) {
+        const msg  = signInError.message.toLowerCase()
+        const code = (signInError as { code?: string }).code ?? ''
+        if (code === 'email_not_confirmed' || msg.includes('email not confirmed')) {
+          setError('Please verify your email address. Check your inbox for a confirmation link.')
+        } else if (
+          msg.includes('invalid login') ||
+          msg.includes('invalid credentials') ||
+          msg.includes('invalid email or password')
+        ) {
           setError('Incorrect email or password. Please try again.')
-        } else if (msg.includes('email not confirmed')) {
-          setError('Please verify your email address before signing in.')
         } else {
           setError(signInError.message)
         }
@@ -50,15 +60,14 @@ function LoginForm() {
         .eq('id', user.id)
         .single()
 
-      // Redirect based on role + status — avoids double server-redirect loop
       if (profile?.role === 'admin') {
         router.push('/admin')
       } else if (profile?.verification_status === 'approved') {
         router.push(redirectTo)
       } else if (!profile?.gov_id_path) {
-        router.push(redirectTo)   // skipped ID upload — go to dashboard
+        router.push(redirectTo)
       } else {
-        router.push('/pending-approval')  // uploaded but awaiting approval
+        router.push('/pending-approval')
       }
     } catch (err) {
       console.error('Unexpected login error:', err)
@@ -95,15 +104,26 @@ function LoginForm() {
                 Forgot password?
               </Link>
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPw ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

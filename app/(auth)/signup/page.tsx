@@ -54,7 +54,6 @@ export default function SignupPage() {
       }
 
       router.push('/upload-id')
-      router.refresh()
     } catch (err) {
       console.error('Signup error:', err)
       setError('Something went wrong. Please try again.')

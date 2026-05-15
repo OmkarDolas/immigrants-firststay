@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { CookieMethodsServer } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
-const PROTECTED = ['/dashboard', '/profile', '/listings', '/bookings']
+const PROTECTED = ['/dashboard', '/profile', '/listings', '/bookings', '/upload-id', '/pending-approval', '/services']
 const AUTH_ONLY  = ['/admin']
 
 export async function middleware(request: NextRequest) {
